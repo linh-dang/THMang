@@ -4,11 +4,11 @@ LIBS = -L/usr/lib/mysql -lmysqlclient
 
 all: myserver
 
-thunghiem.o: thunghiem.c 
-	$(CC) -c $(INCLUDES) thunghiem.c
+main.o: main.c server.h
+	$(CC) -c $(INCLUDES) main.c
 
-myserver: thunghiem.o
-	$(CC) -o myserver thunghiem.o $(LIBS)
+myserver: main.o
+	$(CC) -o myserver main.o $(LIBS)
 
 clean:
 	rm -f myserver thunghiem.o 

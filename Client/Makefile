@@ -1,7 +1,7 @@
 NAME=Client
 CFLAGS=-g -Wall -o $(NAME)
 GTKFLAGS=-export-dynamic `pkg-config --cflags --libs gtk+-3.0`
-SRCS=main.c
+SRCS=main.c Client.h
 CC=gcc
  
 # top-level rule to create the program.

@@ -1,104 +1,4 @@
-#include <gtk/gtk.h>
-#include <stdio.h>
-#include <string.h>
-#include <sys/socket.h>
-#include <arpa/inet.h>
-#include <errno.h>
-#include <stdlib.h>
-/**********************************************/
-#define PORT 5500
-#define STANDARD 500
-#define LENG 1024
-/**********************************************/
-/*declare widget main window*/
-GtkWidget *window;
-GtkWidget *scrolled_window;
-GdkPixbuf *icon;
-GtkWidget *grid;
-/*declare menu item*/
-GtkWidget *menubar;
-GtkWidget *accmenu;
-GtkWidget *account;
-GtkWidget *login;
-GtkWidget *logout;
-GtkWidget *resigter;
-/****************/
-GtkWidget *util;
-GtkWidget *utilities;
-GtkWidget *add;
-GtkWidget *removes;
-/****************/
-GtkWidget *aboutmenu;
-GtkWidget *about;
-GtkWidget *aboutitem;
-/*end declare menu item*/
-GtkWidget *image;
-GtkWidget *slogan;
-GtkWidget *eng;
-GtkWidget *mean;
-GtkWidget *entry;
-/******************/
-GtkWidget *textview;
-GtkWidget *button;
-/* declare for pop-up login window*/
-GtkWidget *window1;
-GtkWidget *grid1;
-GtkWidget *button1;
-GtkWidget *label1;
-GtkWidget *label3;
-GtkWidget *label2;
-GtkWidget *img1;
-GtkWidget *entry1;
-GtkWidget *entry2;
-GtkWidget *spinner;
-/*declare for register window*/
-GtkWidget *window2;
-GtkWidget *img2;
-GtkWidget *label4;
-GtkWidget *label5;
-GtkWidget *label6;
-GtkWidget *label7;
-GtkWidget *checkbutton;
-GtkWidget *entry3;
-GtkWidget *entry4;
-GtkWidget *entry5;
-GtkWidget *button2;
-GtkWidget *spinner1;
-GtkWidget *grid2;
-/* declare for add window */
-GtkWidget *label8;
-GtkWidget *label9;
-GtkWidget *label10;
-GtkWidget *entry6;
-GtkWidget *entry7;
-GtkWidget *textview1;
-GtkWidget *button3;
-GtkWidget *grid3;
-GtkWidget *window3;
-GtkWidget *status1;
-/* declare romove funtion */
-GtkWidget *label11;
-GtkWidget *label12;
-GtkWidget *entry8;
-GtkWidget *textview2;
-GtkWidget *button4;
-GtkWidget *grid4;
-GtkWidget *window4;
-GtkWidget *status2;
-GError *error = NULL;
-/*end declare widget */
-/* declare for socket */
-ssize_t sockfd;
-char buf[LENG];
-struct sockaddr_in server;
-/* prefix for funtion */
-char *per = "%";
-/*SESSION */
-int SESSION	;
-char USER[20];
-/* click checkbox */
-int checked;
-
+#include "Client.h"
 /**************************************************************/
 int checkSQL(char *str){
     int i;
@@ -124,28 +24,22 @@ void connectSK(){
     server.sin_port = htons(PORT);
     connect(sockfd,(struct sockaddr*)&server , sizeof(struct sockaddr));
 }
-/***** end of SOCKET API and check funtion*******************/
-void transferADD(char *str,const char *str1,const char *str2){
-    strcat(str,USER);
-    strcat(str,per);
-    strcat(str,str1);
-    strcat(str,per);
-    strcat(str,str2);
-    strcat(str,".");
+/***** end of SOCKET API and check function*******************/
+
+void transfer_(char* str,int num,...){
+    va_list valist;
+    int i;
+    va_start(valist, num);
+    
+    for (i = 0; i < num-1; i++) {
+        strcat(str,va_arg(valist, char*));
+        strcat(str,per);
+    }
+    strcat(str,va_arg(valist, char*));
+    va_end(valist);
+
 }
-void transferLR(char *str,const char *str1,char *str2){
-    strcat(str,USER);
-    strcat(str,per);
-    strcat(str,str1);
-    strcat(str,per);
-    strcat(str,str2);
-}
-void transferLG(char *str,const char *str1,const char *str2){
-    strcat(str,str1);
-    strcat(str,per);
-    strcat(str,str2);
-}
-/*******************end of utility funtion*************/
+/*******************end of utility function*************/
 GdkPixbuf *create_pixbuf(const gchar * filename) {
     
     GdkPixbuf *pixbuf;
@@ -159,7 +53,10 @@ GdkPixbuf *create_pixbuf(const gchar * filename) {
     
     return pixbuf;
 }
-static gboolean delete_event (GtkWidget *wigdet, GdkEvent *event, gpointer data){
+static gboolean delete_event (){
+    if (USER[0] != '\0') {
+        logout_function();
+    }
     gtk_main_quit();
     return FALSE;
 }
@@ -169,7 +66,7 @@ static void about_dialog(GtkMenuItem *menuitem, gpointer data){
     static const gchar *authors[] ={"Nguyễn Ngọc Anh","Đặng Mỹ Linh",NULL};
     GtkWidget *dialog = gtk_about_dialog_new();
     gtk_about_dialog_set_logo(GTK_ABOUT_DIALOG(dialog),icon1);
-    gtk_about_dialog_set_program_name(GTK_ABOUT_DIALOG(dialog),"English Dictionary from Oxford");
+    gtk_about_dialog_set_program_name(GTK_ABOUT_DIALOG(dialog),"English Dictionary from Oxford - 176.000 words");
     gtk_about_dialog_set_version(GTK_ABOUT_DIALOG(dialog),"Version 0.1");
     gtk_about_dialog_set_comments(GTK_ABOUT_DIALOG(dialog),"Program build from GTK3, Socket API and MySQL API");
     gtk_about_dialog_set_authors(GTK_ABOUT_DIALOG(dialog),authors);
@@ -181,56 +78,22 @@ static void about_dialog(GtkMenuItem *menuitem, gpointer data){
     gtk_widget_destroy(dialog);
 }
 /***********************************/
-void dialog_error3(){
-    GtkWidget *dialog;
-    dialog = gtk_message_dialog_new(GTK_WINDOW(window3),GTK_DIALOG_DESTROY_WITH_PARENT,GTK_MESSAGE_WARNING,GTK_BUTTONS_OK,"You Do Not Permission!");
-    gtk_window_set_title(GTK_WINDOW(dialog), "Eror Permission");
-    gtk_dialog_run(GTK_DIALOG(dialog));
-    gtk_widget_destroy(window3);
-}
-void dialog_error4(){
-    GtkWidget *dialog;
-    dialog = gtk_message_dialog_new(GTK_WINDOW(window4),GTK_DIALOG_DESTROY_WITH_PARENT,GTK_MESSAGE_WARNING,GTK_BUTTONS_OK,"You Do Not Permission!");
-    gtk_window_set_title(GTK_WINDOW(dialog), "Eror Permission");
-    gtk_dialog_run(GTK_DIALOG(dialog));
-    gtk_widget_destroy(window4);
-}
 void dialog_warning(){
     GtkWidget *dialog;
     dialog = gtk_message_dialog_new(GTK_WINDOW(window),GTK_DIALOG_DESTROY_WITH_PARENT,GTK_MESSAGE_WARNING,GTK_BUTTONS_OK,"Can't include special character");
     gtk_dialog_run(GTK_DIALOG(dialog));
 }
-void dialog_succsess1(){
+
+void dialog_(GtkWidget *win,char * title, char* msg){
     GtkWidget *dialog;
-    dialog = gtk_message_dialog_new(GTK_WINDOW(window1),GTK_DIALOG_DESTROY_WITH_PARENT,GTK_MESSAGE_INFO,GTK_BUTTONS_OK,"Wellcome Back !");
-    gtk_window_set_title(GTK_WINDOW(dialog), "Wellcome Back");
+    dialog = gtk_message_dialog_new(GTK_WINDOW(win),GTK_DIALOG_DESTROY_WITH_PARENT,GTK_MESSAGE_INFO,GTK_BUTTONS_OK,"%s",msg);
+    gtk_window_set_title(GTK_WINDOW(dialog), title);
     gtk_dialog_run(GTK_DIALOG(dialog));
-    gtk_widget_destroy(window1);
+    gtk_widget_destroy(win);
 }
 
-void dialog_succsess4(){
-    GtkWidget *dialog;
-    dialog = gtk_message_dialog_new(GTK_WINDOW(window4),GTK_DIALOG_DESTROY_WITH_PARENT,GTK_MESSAGE_INFO,GTK_BUTTONS_OK,"Succsessfully !");
-    gtk_window_set_title(GTK_WINDOW(dialog), "Succsess");
-    gtk_dialog_run(GTK_DIALOG(dialog));
-    gtk_widget_destroy(window4);
-}
-void dialog_succsess3(){
-    GtkWidget *dialog;
-    dialog = gtk_message_dialog_new(GTK_WINDOW(window3),GTK_DIALOG_DESTROY_WITH_PARENT,GTK_MESSAGE_INFO,GTK_BUTTONS_OK,"Succsessfully !");
-    gtk_window_set_title(GTK_WINDOW(dialog), "Succsess");
-    gtk_dialog_run(GTK_DIALOG(dialog));
-    gtk_widget_destroy(window3);
-}
-void dialog_succsess2(){
-    GtkWidget *dialog;
-    dialog = gtk_message_dialog_new(GTK_WINDOW(window2),GTK_DIALOG_DESTROY_WITH_PARENT,GTK_MESSAGE_INFO,GTK_BUTTONS_OK,"Register Succsessfully !");
-    gtk_window_set_title(GTK_WINDOW(dialog), "Register Succsess");
-    gtk_dialog_run(GTK_DIALOG(dialog));
-    gtk_widget_destroy(window2);
-}
 /***************************end of message dialog*****************/
-static void translate(GtkButton *button, gpointer data){
+static void translate_function(GtkButton *button, gpointer data){
     connectSK();
     char translateW[50];
     if (SESSION == 0){
@@ -289,24 +152,23 @@ static void translate(GtkButton *button, gpointer data){
             dialog_warning();
         }else{
             strcat(trans_string,text);
-            printf("%s\n",trans_string);
             gtk_text_buffer_set_text(gtk_text_view_get_buffer (GTK_TEXT_VIEW (textview)),emptystring, -1);
             connectSK();
             write(sockfd, trans_string, strlen(trans_string));
             read(sockfd, buf,LENG);
             g_locale_to_utf8(buf, strlen(buf), NULL, NULL, NULL) ;
-            char *message;
-            message =  g_strdup_printf("%s",buf) ;
+            char *message =  g_strdup_printf("%s",buf) ;
             GtkTextBuffer* text_buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(textview));
             GtkTextIter end;
             gtk_text_buffer_get_end_iter(text_buffer, &end);
             gtk_text_buffer_insert(text_buffer, &end, message, -1);
+            g_free(message);
             close(sockfd);
         }
     }
 }
 /**************************end of translate*****************************/
-static void login_funtion(GtkButton *button, gpointer data){
+static void login_function(GtkButton *button, gpointer data){
     int resultlogin;
     char logintext[40] = "2%";
     bzero(buf,LENG);
@@ -317,7 +179,8 @@ static void login_funtion(GtkButton *button, gpointer data){
     strcpy(passl,pass);
     connectSK();
     if ((checkSQL(accl) == 0) && (checkSQL(passl) == 0)){
-        transferLG(logintext,nick,pass);
+        //transferLG(logintext,nick,pass);
+        transfer_(logintext,2,nick,pass);
         send(sockfd,logintext,strlen(logintext),0);
         recv(sockfd,buf,2,0);
         resultlogin = atoi(buf);
@@ -330,7 +193,11 @@ static void login_funtion(GtkButton *button, gpointer data){
     if(resultlogin == 1){
         SESSION = 1;
         strcpy(USER,accl);
-        dialog_succsess1();
+        dialog_(window1,"Wellcome Back","Wellcome Back");
+        gtk_widget_set_sensitive(login, FALSE);
+        gtk_widget_set_sensitive(resigter, FALSE);
+        gtk_widget_set_sensitive(logout, TRUE);
+        //makegtk();
     }
 }
 static void login_popup(GtkMenuItem *menuitem, gpointer data){
@@ -357,19 +224,19 @@ static void login_popup(GtkMenuItem *menuitem, gpointer data){
     label3 = gtk_label_new(" ");
     gtk_grid_attach(GTK_GRID(grid1),label3,3,4,4,1);
     button1 = gtk_button_new_with_label("LOG IN");
-    g_signal_connect(GTK_BUTTON(button1),"clicked",G_CALLBACK(login_funtion),NULL);
+    g_signal_connect(GTK_BUTTON(button1),"clicked",G_CALLBACK(login_function),NULL);
     gtk_grid_attach(GTK_GRID(grid1),button1,4,5,2,1);
     gtk_container_add(GTK_CONTAINER(window1),grid1);
     gtk_widget_show_all(window1);
 }
-/*************************end of login funtion********************/
+/*************************end of login function********************/
 static void isclick(GtkCheckButton *button, gpointer *data){
     if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(data)))
         checked = 1;
     else
         checked = 0;
 }
-static void resigter_funtion(GtkButton *button, gpointer data){
+static void resigter_function(GtkButton *button, gpointer data){
     char registertext[50] = "3%";
     int resultregister;
     char Ur[20],Ps[20];
@@ -383,7 +250,7 @@ static void resigter_funtion(GtkButton *button, gpointer data){
         if ((checkSQL(Ur) == 0) && (checkSQL(Ps) == 0))
         {
             connectSK();
-            transferLG(registertext,Userreg,Passreg);
+            transfer_(registertext,2,Userreg,Passreg);
             send(sockfd,registertext,strlen(registertext),0);
             recv(sockfd,buf,2,0);
             resultregister = atoi(buf);
@@ -394,7 +261,7 @@ static void resigter_funtion(GtkButton *button, gpointer data){
             }
             if (resultregister == 1)
             {
-                dialog_succsess2();
+                dialog_(window2, "Register Succsess","Register Succsessfully !" );
             }
         }
     }
@@ -441,17 +308,23 @@ static void resigter_window(GtkMenuItem *menuitem, gpointer data){
     gtk_grid_attach(GTK_GRID(grid2),label7,3,6,4,1);
     button2 = gtk_button_new_with_label("REGISTER");
     gtk_grid_attach(GTK_GRID(grid2),button2,4,7,2,1);
-    g_signal_connect(GTK_BUTTON(button2),"clicked",G_CALLBACK(resigter_funtion),NULL);
+    g_signal_connect(GTK_BUTTON(button2),"clicked",G_CALLBACK(resigter_function),NULL);
     g_signal_connect_swapped(GTK_BUTTON(button2),"clicked",G_CALLBACK(register_spinner),NULL);
     gtk_widget_show_all(window2);
 }
-/*****************************end of register funtion *************/
-void logout_funtion(GtkMenuItem *menuitem, gpointer data){
+/*****************************end of register function *************/
+void logout_function(){
+    char logout_str[LENG] = "6%";
     SESSION = 0;
+    gtk_widget_set_sensitive(login,TRUE);
+    gtk_widget_set_sensitive(resigter, TRUE);
+    gtk_widget_set_sensitive(logout, FALSE);
+    strcat(logout_str,USER);
+    send(sockfd,logout_str,strlen(logout_str),0);
     bzero(USER,100);
 }
 /*****************************end of log out*******************/
-static void add_funtion(GtkButton *button, gpointer data){
+static void add_function(GtkButton *button, gpointer data){
     char addstring[LENG] = "4%";
     int resultadd;
     if((SESSION == 1)||(SESSION ==2)){
@@ -468,20 +341,23 @@ static void add_funtion(GtkButton *button, gpointer data){
         {
             gtk_label_set_text(GTK_LABEL(status1),"Missing one of fields!");
         }else{
-            transferADD(addstring,new_word,kind_word);
+            transfer_(addstring,3,USER,new_word,kind_word);
+            strcat(addstring,".");
             strcat(addstring,mean_w);
+            bzero(buf, LENG);
             send(sockfd,addstring,strlen(addstring),0);
             recv(sockfd,buf,1,0);
+            bzero(addstring, LENG);
             resultadd = atoi(buf);
             if(resultadd == 0){
                 gtk_label_set_text(GTK_LABEL(status1),"Server Busy !");
             }
             if(resultadd == 1){
-                dialog_succsess3();
+                dialog_(window3, "Succsess","Succsessfully !" );
             }
         }
     }else{
-        dialog_error3();
+        dialog_(window3,"Eror Permission","You Do Not Permission!");
     }
 }
 static void add_window(GtkMenuItem *menuitem, gpointer data){
@@ -509,13 +385,13 @@ static void add_window(GtkMenuItem *menuitem, gpointer data){
     status1 = gtk_label_new(" ");
     gtk_grid_attach(GTK_GRID(grid3),status1,1,6,5,1);
     button3 = gtk_button_new_with_label("Submit");
-    g_signal_connect(GTK_BUTTON(button3),"clicked",G_CALLBACK(add_funtion),NULL);
+    g_signal_connect(GTK_BUTTON(button3),"clicked",G_CALLBACK(add_function),NULL);
     gtk_grid_attach(GTK_GRID(grid3),button3,4,7,2,1);
     gtk_container_add(GTK_CONTAINER(window3),grid3);
     gtk_widget_show_all(window3);
 }
-/**************** end of add funtion*************************/
-static void remove_funtion(GtkButton *button, gpointer data){
+/**************** end of add function*************************/
+static void remove_function(GtkButton *button, gpointer data){
     char removestring[LENG] = "5%";
     char del[LENG] = "This word has been delete because: ";
     int resultremove;
@@ -530,7 +406,7 @@ static void remove_funtion(GtkButton *button, gpointer data){
         char *reason_rm = NULL;
         reason_rm = gtk_text_buffer_get_text(text_buffer, &startIter, &endIter, TRUE);
         strcat(del,reason_rm);
-        transferLR(removestring,rm_word,del);
+        transfer_(removestring,2,rm_word,del);
         send(sockfd,removestring,strlen(removestring),0);
         recv(sockfd,buf,2,0);
         resultremove = atoi(buf);
@@ -538,10 +414,10 @@ static void remove_funtion(GtkButton *button, gpointer data){
             gtk_label_set_text(GTK_LABEL(status2),"Server Busy !");
         }if (resultremove == 1)
         {
-            dialog_succsess4();
+            dialog_(window4, "Succsess","Succsessfully !" );
         }
     }else{
-        dialog_error4();
+        dialog_(window4,"Eror Permission","You Do Not Permission!");
     }
 }
 static void remove_window(GtkMenuItem *menuitem, gpointer data){
@@ -564,12 +440,12 @@ static void remove_window(GtkMenuItem *menuitem, gpointer data){
     status2 = gtk_label_new(" ");
     gtk_grid_attach(GTK_GRID(grid4),status2,2,6,4,1);
     button4 = gtk_button_new_with_label("Submit");
-    g_signal_connect(GTK_BUTTON(button4),"clicked",G_CALLBACK(remove_funtion),NULL);
+    g_signal_connect(GTK_BUTTON(button4),"clicked",G_CALLBACK(remove_function),NULL);
     gtk_grid_attach(GTK_GRID(grid4),button4,4,7,2,1);
     gtk_container_add(GTK_CONTAINER(window4),grid4);
     gtk_widget_show_all(window4);
 }
-/***********************************end of remove funtion*******************/
+/***********************************end of remove function*******************/
 static void makegtk(){
     window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
     gtk_window_set_title(GTK_WINDOW(window),"English Dictionary");
@@ -591,7 +467,7 @@ static void makegtk(){
     accmenu = gtk_menu_new();
     account = gtk_menu_item_new_with_label("Account");
     login = gtk_menu_item_new_with_label("Log in");
-    resigter = gtk_menu_item_new_with_label("Sign in");
+    resigter = gtk_menu_item_new_with_label("Sign up");
     logout = gtk_menu_item_new_with_label("Log out");
     gtk_menu_item_set_submenu(GTK_MENU_ITEM(account),accmenu);
     gtk_menu_shell_append(GTK_MENU_SHELL(accmenu),login);
@@ -600,9 +476,9 @@ static void makegtk(){
     gtk_menu_shell_append(GTK_MENU_SHELL(menubar),account);
     g_signal_connect(GTK_MENU_ITEM(login),"activate",G_CALLBACK(login_popup),NULL);
     g_signal_connect(GTK_MENU_ITEM(resigter),"activate",G_CALLBACK(resigter_window),NULL);
-    g_signal_connect(GTK_MENU_ITEM(logout),"activate",G_CALLBACK(logout_funtion),NULL);
+    g_signal_connect(GTK_MENU_ITEM(logout),"activate",G_CALLBACK(logout_function),NULL);
     /*g_signal_connect() ..... here*/
-    
+    gtk_widget_set_sensitive(logout, FALSE);
     /***************************************/
     util = gtk_menu_new();
     utilities = gtk_menu_item_new_with_label("Utilities");
@@ -650,14 +526,14 @@ static void makegtk(){
     textview = gtk_text_view_new();
     gtk_text_view_set_editable(GTK_TEXT_VIEW(textview),FALSE);
     gtk_text_view_set_right_margin(GTK_TEXT_VIEW(textview),20);
-    // has a funtion interfere here to put something to it
+    // has a function interfere here to put something to it
     scrolled_window = gtk_scrolled_window_new(NULL, NULL);              
     gtk_container_add(GTK_CONTAINER(scrolled_window), textview);       
     gtk_grid_attach(GTK_GRID(grid),scrolled_window,1,9,9,9);
     /***********************end 4th-7th line for textview**********************/
     button = gtk_button_new_with_label("Translate");
-    g_signal_connect(GTK_BUTTON(button),"clicked",G_CALLBACK(translate),NULL);
-    /*******funtion for it**************/
+    g_signal_connect(GTK_BUTTON(button),"clicked",G_CALLBACK(translate_function),NULL);
+    /*******function for it**************/
     //g_signal_connect()...
    	gtk_grid_attach(GTK_GRID(grid),button,3,19,4,2);
    	/***************************end all**************************/

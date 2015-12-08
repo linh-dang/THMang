@@ -1,43 +1,9 @@
-#include <my_global.h>
-#include <mysql.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <sys/fcntl.h>
-#include <sys/poll.h>
-#include <sys/socket.h>
-#include <sys/time.h>
-#include <string.h>
-#include <netinet/in.h>
-#include <errno.h>
-#define SERV_PORT 5500
-#define OPEN_MAX 100
-#define LENG 1024
-//declear for socket
-int					i, maxi, listenfd, connfd, sockfd;
-int					nready;
-ssize_t				n;
-char				comingbuf[LENG];
-char 				sendbuf[LENG];
-socklen_t			clilen;
-struct pollfd		client[OPEN_MAX];
-struct sockaddr_in	cliaddr, servaddr;
-/*************************************************/
-//declear for SQL api
-MYSQL               *conn;
-MYSQL_RES 			*result;
-long 				num_rows;
-char 				query[LENG];
-//declare error and success
-char *error = "0";
-char *succ = "1";
-/*****end error*******/
-char enter[2] = "\n";
-char *pre[25] = {"1__","2__","3__","4__","5__","6__","7__","8__","9__","10__","11__","12__","13__","14__","15__","16__","17__","18__","19__","20__","21__","22__","23__","24__","25__"};
+#include "server.h"
 /**************************************************/
 void finish_with_error(MYSQL *conn){
     fprintf(stderr, "%s\n", mysql_error(conn));
-    mysql_close(conn);
-    exit(1);
+    //mysql_close(conn);
+    //exit(1);
 }
 void err_sys(const char* x){
     perror(x);
@@ -47,19 +13,22 @@ void connectSQL(){
     conn = mysql_init(NULL);
     mysql_options(conn, MYSQL_SET_CHARSET_NAME, "utf8");
     mysql_options(conn, MYSQL_INIT_COMMAND, "SET NAMES utf8");
-    if (!mysql_real_connect(conn, "localhost", "root", "thicongtu2", "english", 0, 0, 0))
+    if (!mysql_real_connect(conn, "127.0.0.1", "root", "", "english", 0, 0, 0))//thicongtu2
     {
         finish_with_error(conn);
     }else{
         printf("[Server]: Succsess connect to Database!\n");
     }
+    qu
+    querySQL("UPDATE account SET online = 0");
 }
 void endSQL(){
     mysql_free_result(result);
     mysql_close(conn);
 }
 int querySQL(char *str){
-    if (mysql_query(conn, str))
+
+if (mysql_query(conn, str))
     {
         finish_with_error(conn);
     }
@@ -90,14 +59,13 @@ int selectSQL(char* dbname, char* word){
     return (int)num_rows;
 }
 int inmodify(char *str1, char *str2){
-    strcpy(query,"SELECT MAX(`id`),`mean_reason` FROM `modify`");
+    strcpy(query,"SELECT `id`,`mean_reason` FROM `modify` ");
     strcat(query,"WHERE `user` LIKE \'");
     strcat(query,str1);
     strcat(query,"\' AND `word` LIKE \'");
     strcat(query,str2);
-    strcat(query, "\'");
+    strcat(query, "\'  ORDER BY id DESC LIMIT 1");
     querySQL(query);
-    mysql_free_result(result);
     return (int)num_rows;
 }
 /*void resultEV(){
@@ -121,7 +89,6 @@ int inmodify(char *str1, char *str2){
 void resultEV(){
     MYSQL_ROW row;
     int i = 0;
-    char a;
     int leng2;
     FILE *f1 = fopen("a.txt","a");
     if (num_rows == 0)
@@ -129,7 +96,7 @@ void resultEV(){
         write(sockfd,error,strlen(error));
     }
     
-    while(row = mysql_fetch_row(result)){
+    while((row = mysql_fetch_row(result))){
         fputs(pre[i],f1);
         fputs(row[1],f1);
         fputs(row[2],f1);
@@ -154,12 +121,11 @@ void resultEV(){
 void resultEC(){
     MYSQL_ROW row;
     int i = 0;
-    char a;
     if (num_rows == 0)
     {
         write(sockfd,error,strlen(error));
     }
-    while(row = mysql_fetch_row(result)){
+    while((row = mysql_fetch_row(result))){
         strcat(sendbuf,pre[i]);
         strcat(sendbuf,row[1]);
         strcat(sendbuf,enter);
@@ -169,7 +135,7 @@ void resultEC(){
     write(sockfd,sendbuf,strlen(sendbuf));
 }
 void search(){
-    strcpy(&comingbuf[0],&comingbuf[1]);
+    memmove(&comingbuf[0],&comingbuf[1], 1);
     char *searchW = strtok(comingbuf,"%");
     selectSQL("entries",searchW);
     resultEV();
@@ -177,14 +143,16 @@ void search(){
     bzero(comingbuf,LENG);
 }
 void searchUS(){
-    strcpy(&comingbuf[0],&comingbuf[1]);
+    memmove(&comingbuf[0],&comingbuf[1], 1);
     char *US_R = strtok(comingbuf,"%");
     char *S_W = strtok(NULL,"%");
     if(!inmodify(US_R,S_W)){
+        mysql_free_result(result);
         selectSQL("entries",S_W);
         resultEV();
         printf("hello\n");
     }else{
+        mysql_free_result(result);
         inmodify(US_R,S_W);
         resultEC();
     }
@@ -192,32 +160,46 @@ void searchUS(){
     bzero(comingbuf,LENG);
 }
 int loginSQL(char *str1, char *str2){
-    strcpy(query,"SELECT \'role\' FROM `account`");
-    strcat(query,"WHERE `user` = \'");
+    strcpy(query,"SELECT `role`,`online` FROM `account`");
+    strcat(query," WHERE `user` = \'");
     strcat(query,str1);
-    strcat(query,"\'");
+    strcat(query,"\' ");
     strcat(query,"AND `pass` = \'");
     strcat(query,str2);
     strcat(query,"\'");
     querySQL(query);
     return (int)num_rows;
 }
+int set_status(char *acc, int online){
+    char str[]= "1";
+    if(online == 0)strcpy(str,"0");
+    strcpy(query,"UPDATE `english`.`account` SET `online` = \'");
+    strcat(query, str);
+    strcat(query,"\' WHERE `user` = \'");
+    strcat(query,acc);
+    strcat(query,"\'");
+    querySQL(query);
+    return (int)num_rows;
+}
 int checklogin(char *acc, char *pass){
-    MYSQL_ROW row;
-    int session;
     loginSQL(acc,pass);
-    if (num_rows == 0)
+    MYSQL_ROW row;
+    int logged_in = 0;
+    while(row = mysql_fetch_row(result)){
+        logged_in = atoi(row[1]);
+        }
+    if ((num_rows == 0)||(logged_in==1))
     {
-        session = 0;
+        return 0;
     }
     else{
-        session = 1;
+        set_status(acc,1);
+        return 1;
     }
-    return session;
 }
 void login(){
     int a;
-    strcpy(&comingbuf[0], &comingbuf[1]);
+    memmove(&comingbuf[0],&comingbuf[1], 1);
     char *User = strtok(comingbuf,"%");
     char *Pass = strtok(NULL,"%");
     a = checklogin(User,Pass);
@@ -238,6 +220,7 @@ void regsiterSQL(char *str1,char *str2){
     strcat(query,str2);
     strcat(query, " \')");
     querySQL(query);
+    mysql_free_result(result);
 }
 int isUser(char *str){
     strcpy(query,"SELECT * FROM `account`");
@@ -249,7 +232,7 @@ int isUser(char *str){
     return (int)num_rows;
 }
 void regsiter(){
-    strcpy(&comingbuf[0], &comingbuf[1]);
+    memmove(&comingbuf[0], &comingbuf[1], 1);
     char *User = strtok(comingbuf,"%");
     char *Pass = strtok(NULL,"%");
     if (isUser(User) == 1)
@@ -274,18 +257,20 @@ int addSQL(char *str1, char *str2, char *str3){
     strcat(query,"AC");
     strcat(query, " \')");
     resultAddSQL = querySQL(query);
+    mysql_free_result(result);
     return resultAddSQL;
 }
 void adds(){
-    strcpy(&comingbuf[0], &comingbuf[1]);
+    memmove(&comingbuf[0],&comingbuf[1], 1);
     char *New_U = strtok(comingbuf,"%");
     char *New_W = strtok(NULL,"%");
     char *New_M = strtok(NULL,"%");
-    printf("%s\n",New_W );
     if(addSQL(New_U,New_W,New_M) == 0){
         write(sockfd,error,1);
+        
     }else{
         write(sockfd,succ,1);
+        
     }
     bzero(comingbuf,LENG);
 }
@@ -301,13 +286,13 @@ int removeSQL(char *str1, char *str2, char *str3){
     strcat(query, "\',\'");
     strcat(query,"R");
     strcat(query, " \')");
-    printf("%s\n",query );
     resultRmSQl = querySQL(query);
+    mysql_free_result(result);
     printf("DONE\n");
     return resultRmSQl;
 }
 void removes(){
-    strcpy(&comingbuf[0], &comingbuf[1]);
+    memmove(&comingbuf[0],&comingbuf[1], 1);
     char *R_User = strtok(comingbuf,"%");
     char *R_Word = strtok(NULL,"%");
     char *R_Reas = strtok(NULL,"%");
@@ -316,6 +301,12 @@ void removes(){
     }else{
         write(sockfd,succ,1);
     }
+    bzero(comingbuf,LENG);
+}
+void logout(){
+    memmove(&comingbuf[0],&comingbuf[1], 1);
+    char *User = strtok(comingbuf,"%");
+    set_status(User, 0);
     bzero(comingbuf,LENG);
 }
 void process(){
@@ -333,10 +324,11 @@ void process(){
             break;
         case '5' : removes();
             break;
+        case '6' : logout();
+            break;
         default : break;
     }
 }
-
 /*****************************************************/
 int main(int argc, char **argv)
 {
@@ -350,6 +342,9 @@ int main(int argc, char **argv)
         exit(1);
     }
     printf("[Server]: Create socket Sucessfully!\n");
+    int optval = 1;
+    setsockopt(listenfd , SOL_SOCKET, SO_REUSEADDR,(const void *)&optval , sizeof(optval));
+
     bzero(&servaddr, sizeof(servaddr));
     servaddr.sin_family      = AF_INET;
     servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
@@ -365,7 +360,7 @@ int main(int argc, char **argv)
     printf("[Server]: Listening ....\n");
     client[0].fd = listenfd;
     client[0].events = POLLRDNORM;
-    for (i = 1; i < OPEN_MAX; i++)
+    for (i = 1; i < OPENMAX; i++)
         client[i].fd = -1;
     maxi = 0;
     printf("[Server]: Poll processing....\n");
@@ -377,20 +372,20 @@ int main(int argc, char **argv)
             clilen = sizeof(cliaddr);
             connfd = accept(listenfd, (struct sockaddr *) &cliaddr, &clilen);
             //save decriptor
-            for (i = 1; i < OPEN_MAX; i++)
+            for (i = 1; i < OPENMAX; i++)
                 if (client[i].fd < 0) {
                     client[i].fd = connfd;
                     break;
                 }
-            if (i == OPEN_MAX)
+            if (i == OPENMAX)
                 err_sys("[Server]: Too many clients coming\n");
             
             client[i].events = POLLRDNORM;
             if (i > maxi)
-                maxi = i;			
+                maxi = i;
             // no descriptor can read
             if (--nready <= 0)
-                continue;			
+                continue;
         }
         //check incoming client to recv data
         for (i = 1; i <= maxi; i++) {
@@ -400,7 +395,7 @@ int main(int argc, char **argv)
                 if ( (n = read(sockfd, comingbuf, LENG)) < 0) {
                     
                     //something wrong with client
-                    if (errno == ECONNRESET) { 
+                    if (errno == ECONNRESET) {
                         printf("[Server]: Client[%d] aborted connection\n", i);
                         close(sockfd);
                         client[i].fd = -1;
@@ -412,10 +407,15 @@ int main(int argc, char **argv)
                     client[i].fd = -1;
                 } else
                 /* process signal from client*/
+                {
                     process();
+                    
+                }
                 if (--nready <= 0)
                     break;				/* all done */
+                
             }
+           
         }
     }
     return 0;
