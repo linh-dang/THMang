@@ -130,7 +130,6 @@ void resultEC(){
         strcat(sendbuf,row[1]);
         strcat(sendbuf,enter);
         i++;
-        /*send resuld to client*/
     }
     write(sockfd,sendbuf,strlen(sendbuf));
 }
