@@ -3,7 +3,7 @@
 int checkSQL(char *str){
     int i;
     int k = 0;
-    if((strlen(str) == 0)||(strlen(str) >= 50)){
+    if((strlen(str) == 0)||(strlen(str) >= LENG)){
         k = 1;
     }else{
         for (i = 0; i < strlen(str); i++)
@@ -23,6 +23,19 @@ void connectSK(){
     server.sin_family = AF_INET;
     server.sin_port = htons(PORT);
     connect(sockfd,(struct sockaddr*)&server , sizeof(struct sockaddr));
+}
+void connectSK1(){
+    sockfd = socket(AF_INET , SOCK_STREAM , 0);
+    bzero(&server,sizeof(server));
+    server.sin_addr.s_addr = inet_addr("127.0.0.1");
+    server.sin_family = AF_INET;
+    server.sin_port = htons(PORT);
+    if(connect(sockfd,(struct sockaddr*)&server , sizeof(struct sockaddr))==-1){
+        dialog_(window, "Error", "Can not connect to server!");
+        close(sockfd);
+    }
+    close(sockfd);
+    
 }
 /***** end of SOCKET API and check function*******************/
 
@@ -44,7 +57,6 @@ GdkPixbuf *create_pixbuf(const gchar * filename) {
     
     GdkPixbuf *pixbuf;
     pixbuf = gdk_pixbuf_new_from_file(filename, &error);
-    
     if (!pixbuf) {
         
         fprintf(stderr, "%s\n", error->message);
@@ -99,7 +111,7 @@ static void translate_function(GtkButton *button, gpointer data){
     char translateW[50];
     if (SESSION == 0){
         char *emptystring = "";
-        char trans_string[55] = "0%";
+        char trans_string[LENG-2] = "0%";
         bzero(buf, LENG);
         const char *text = gtk_entry_get_text(GTK_ENTRY(entry));
         strcpy(translateW,text);
@@ -198,7 +210,6 @@ static void login_function(GtkButton *button, gpointer data){
         gtk_widget_set_sensitive(login, FALSE);
         gtk_widget_set_sensitive(resigter, FALSE);
         gtk_widget_set_sensitive(logout, TRUE);
-        //makegtk();
     }
     close(sockfd);
 }
@@ -255,7 +266,6 @@ static void resigter_function(GtkButton *button, gpointer data){
             transfer_(registertext,2,Userreg,Passreg);
             send(sockfd,registertext,strlen(registertext),0);
             recv(sockfd,buf,2,0);
-            close(sockfd);
             resultregister = atoi(buf);
             if (resultregister == 0)
             {
@@ -266,6 +276,7 @@ static void resigter_function(GtkButton *button, gpointer data){
             {
                 dialog_(window2, "Register Succsess","Register Succsessfully !" );
             }
+            close(sockfd);
         }
     }
 }
@@ -311,8 +322,9 @@ static void resigter_window(GtkMenuItem *menuitem, gpointer data){
     gtk_grid_attach(GTK_GRID(grid2),label7,3,6,4,1);
     button2 = gtk_button_new_with_label("REGISTER");
     gtk_grid_attach(GTK_GRID(grid2),button2,4,7,2,1);
-    g_signal_connect(GTK_BUTTON(button2),"clicked",G_CALLBACK(resigter_function),NULL);
     g_signal_connect_swapped(GTK_BUTTON(button2),"clicked",G_CALLBACK(register_spinner),NULL);
+    g_signal_connect(GTK_BUTTON(button2),"clicked",G_CALLBACK(resigter_function),NULL);
+    
     gtk_widget_show_all(window2);
 }
 /*****************************end of register function *************/
@@ -328,12 +340,11 @@ void logout_function(){
     bzero(USER,100);
     close(sockfd);
 }
-int i = 0;
 /*****************************end of log out*******************/
 static void add_function(GtkButton *button, gpointer data){
     char addstring[LENG] = "4%";
     int resultadd;
-    if((SESSION == 1)||(SESSION ==2)){
+    if(SESSION == 1){
         const char *new_word = gtk_entry_get_text(GTK_ENTRY(entry6));
         const char *kind_word = gtk_entry_get_text(GTK_ENTRY(entry7));
         GtkTextBuffer* text_buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(textview1));
@@ -347,22 +358,26 @@ static void add_function(GtkButton *button, gpointer data){
         {
             gtk_label_set_text(GTK_LABEL(status1),"Missing one of fields!");
         }else{
+            
             transfer_(addstring,3,USER,new_word,kind_word);
             strcat(addstring,".");
             strcat(addstring,mean_w);
-            printf("add %d- %s\n",i++,addstring);
-            connectSK();
-            bzero(buf, LENG);
-            write(sockfd,addstring,strlen(addstring));
-            recv(sockfd,buf,1,0);
-            close(sockfd);
-            bzero(addstring, LENG);
-            resultadd = atoi(buf);
-            if(resultadd == 0){
-                gtk_label_set_text(GTK_LABEL(status1),"Server Busy !");
-            }
-            if(resultadd == 1){
-                dialog_(window3, "Succsess","Succsessfully !" );
+            if (checkSQL(addstring)) {
+                dialog_(window3, "ERROR", "Invalid character!");
+            }else{
+                connectSK();
+                bzero(buf, LENG);
+                write(sockfd,addstring,strlen(addstring));
+                recv(sockfd,buf,1,0);
+                close(sockfd);
+                bzero(addstring, LENG);
+                resultadd = atoi(buf);
+                if(resultadd == 0){
+                    gtk_label_set_text(GTK_LABEL(status1),"Server Busy !");
+                }
+                if(resultadd == 1){
+                    dialog_(window3, "Succsess","Succsessfully !" );
+                }
             }
         }
     }else{
@@ -416,16 +431,19 @@ static void remove_function(GtkButton *button, gpointer data){
         reason_rm = gtk_text_buffer_get_text(text_buffer, &startIter, &endIter, TRUE);
         strcat(del,reason_rm);
         transfer_(removestring,3,USER,rm_word,del);
-        printf("%s",removestring);
-        connectSK();
-        send(sockfd,removestring,strlen(removestring),0);
-        recv(sockfd,buf,2,0);
-        resultremove = atoi(buf);
-        if(resultremove == 0){
-            gtk_label_set_text(GTK_LABEL(status2),"Server Busy !");
-        }if (resultremove == 1)
-        {
-            dialog_(window4, "Succsess","Succsessfully !" );
+        if (checkSQL(removestring)) {
+            dialog_(window4, "Eror !","Invalid character!" );
+        }else{
+            connectSK();
+            send(sockfd,removestring,strlen(removestring),0);
+            recv(sockfd,buf,2,0);
+            resultremove = atoi(buf);
+            if(resultremove == 0){
+                gtk_label_set_text(GTK_LABEL(status2),"Server Busy !");
+            }if (resultremove == 1)
+            {
+                dialog_(window4, "Succsess","Succsessfully !" );
+            }
         }
     }else{
         dialog_(window4,"Eror Permission","You Do Not Permission!");
@@ -556,6 +574,8 @@ int main(int argc, char *argv[])
 {
     gtk_init(&argc,&argv);
     makegtk();
+    connectSK1();
     gtk_main();
+    
     return 0;
 }

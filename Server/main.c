@@ -2,7 +2,7 @@
 /**************************************************/
 void finish_with_error(MYSQL *conn){
     fprintf(stderr, "%s\n", mysql_error(conn));
-    //mysql_close(conn);
+    mysql_close(conn);
     //exit(1);
 }
 void err_sys(const char* x){
@@ -13,7 +13,7 @@ void connectSQL(){
     conn = mysql_init(NULL);
     mysql_options(conn, MYSQL_SET_CHARSET_NAME, "utf8");
     mysql_options(conn, MYSQL_INIT_COMMAND, "SET NAMES utf8");
-    if (!mysql_real_connect(conn, "127.0.0.1", "root", "", "english", 0, 0, 0))//thicongtu2
+    if (!mysql_real_connect(conn, "127.0.0.1", "root", "", "english", 0, 0, 0))
     {
         finish_with_error(conn);
     }else{
@@ -26,8 +26,8 @@ void endSQL(){
     mysql_close(conn);
 }
 int querySQL(char *str){
-    
-    printf("\nquery - %s\n ",str);
+
+    //printf("\nquery - %s\n ",str);
     if (mysql_query(conn, str))
     {
         finish_with_error(conn);
@@ -93,7 +93,7 @@ void resultEV(){
     FILE *f1 = fopen("a.txt","a");
     if (num_rows == 0)
     {
-        write(sockfd,error,strlen(error));
+        write(sockfd,notfound,strlen(notfound));
     }
     
     while((row = mysql_fetch_row(result))){
@@ -123,7 +123,7 @@ void resultEC(){
     int i = 0;
     if (num_rows == 0)
     {
-        write(sockfd,error,strlen(error));
+        write(sockfd,notfound,strlen(notfound));
     }
     while((row = mysql_fetch_row(result))){
         strcat(sendbuf,pre[i]);
@@ -187,7 +187,7 @@ int checklogin(char *acc, char *pass){
     int logged_in = 0;
     while(row = mysql_fetch_row(result)){
         logged_in = atoi(row[1]);
-    }
+        }
     if ((num_rows == 0)||(logged_in==1))
     {
         return 0;
@@ -218,6 +218,7 @@ void regsiterSQL(char *str1,char *str2){
     strcat(query,str1);
     strcat(query, "\',\'");
     strcat(query,str2);
+    strcat(query, "\',\'");
     strcat(query, " \')");
     querySQL(query);
     mysql_free_result(result);
@@ -343,7 +344,7 @@ int main(int argc, char **argv)
     printf("[Server]: Create socket Sucessfully!\n");
     int optval = 1;
     setsockopt(listenfd , SOL_SOCKET, SO_REUSEADDR,(const void *)&optval , sizeof(optval));
-    
+
     bzero(&servaddr, sizeof(servaddr));
     servaddr.sin_family      = AF_INET;
     servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
@@ -355,7 +356,7 @@ int main(int argc, char **argv)
     }
     printf("[Server]: Bind Sucessfully with 127.0.0.1 Port 5500...\n");
     //listen
-    listen(listenfd, 10);
+    listen(listenfd, OPENMAX);
     printf("[Server]: Listening ....\n");
     client[0].fd = listenfd;
     client[0].events = POLLRDNORM;
@@ -407,15 +408,14 @@ int main(int argc, char **argv)
                 } else
                 /* process signal from client*/
                 {
-                    printf("%s",comingbuf);
+                    //printf("%s",comingbuf);
                     process();
-                    
                 }
                 if (--nready <= 0)
                     break;				/* all done */
                 
             }
-            
+           
         }
     }
     return 0;

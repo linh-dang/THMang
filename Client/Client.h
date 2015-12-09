@@ -21,7 +21,7 @@ static void makegtk();
 /**********************************************/
 #define PORT 5500
 #define STANDARD 500
-#define LENG 10024
+#define LENG 1024
 /**********************************************/
 /*declare widget main window*/
 GtkWidget *window;

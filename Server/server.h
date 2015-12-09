@@ -24,7 +24,7 @@
 #include <arpa/inet.h>
 #define SERV_PORT 5500
 #define OPENMAX 100
-#define LENG 10024
+#define LENG 1024
 //declear for socket
 int					i, maxi, listenfd, connfd, sockfd;
 int					nready;
@@ -40,11 +40,14 @@ MYSQL               *conn;
 MYSQL_RES 			*result;
 long 				num_rows;
 char 				query[LENG];
+
 //declare error and success
 char *error = "0";
 char *succ = "1";
+char 				*notfound = "WORD NOT EXIST";
 /*****end error*******/
 char enter[2] = "\n";
 char *pre[25] = {"1__","2__","3__","4__","5__","6__","7__","8__","9__","10__","11__","12__","13__","14__","15__","16__","17__","18__","19__","20__","21__","22__","23__","24__","25__"};
 int querySQL(char *str);
+
 #endif
