@@ -19,7 +19,6 @@ void connectSQL(){
     }else{
         printf("[Server]: Succsess connect to Database!\n");
     }
-    qu
     querySQL("UPDATE account SET online = 0");
 }
 void endSQL(){
@@ -27,8 +26,9 @@ void endSQL(){
     mysql_close(conn);
 }
 int querySQL(char *str){
-
-if (mysql_query(conn, str))
+    
+    printf("\nquery - %s\n ",str);
+    if (mysql_query(conn, str))
     {
         finish_with_error(conn);
     }
@@ -187,7 +187,7 @@ int checklogin(char *acc, char *pass){
     int logged_in = 0;
     while(row = mysql_fetch_row(result)){
         logged_in = atoi(row[1]);
-        }
+    }
     if ((num_rows == 0)||(logged_in==1))
     {
         return 0;
@@ -270,7 +270,6 @@ void adds(){
         
     }else{
         write(sockfd,succ,1);
-        
     }
     bzero(comingbuf,LENG);
 }
@@ -344,7 +343,7 @@ int main(int argc, char **argv)
     printf("[Server]: Create socket Sucessfully!\n");
     int optval = 1;
     setsockopt(listenfd , SOL_SOCKET, SO_REUSEADDR,(const void *)&optval , sizeof(optval));
-
+    
     bzero(&servaddr, sizeof(servaddr));
     servaddr.sin_family      = AF_INET;
     servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
@@ -408,6 +407,7 @@ int main(int argc, char **argv)
                 } else
                 /* process signal from client*/
                 {
+                    printf("%s",comingbuf);
                     process();
                     
                 }
@@ -415,7 +415,7 @@ int main(int argc, char **argv)
                     break;				/* all done */
                 
             }
-           
+            
         }
     }
     return 0;

@@ -37,7 +37,7 @@ void transfer_(char* str,int num,...){
     }
     strcat(str,va_arg(valist, char*));
     va_end(valist);
-
+    
 }
 /*******************end of utility function*************/
 GdkPixbuf *create_pixbuf(const gchar * filename) {
@@ -56,6 +56,7 @@ GdkPixbuf *create_pixbuf(const gchar * filename) {
 static gboolean delete_event (){
     if (USER[0] != '\0') {
         logout_function();
+        close(sockfd);
     }
     gtk_main_quit();
     return FALSE;
@@ -199,6 +200,7 @@ static void login_function(GtkButton *button, gpointer data){
         gtk_widget_set_sensitive(logout, TRUE);
         //makegtk();
     }
+    close(sockfd);
 }
 static void login_popup(GtkMenuItem *menuitem, gpointer data){
     window1 = gtk_window_new(GTK_WINDOW_TOPLEVEL);
@@ -253,6 +255,7 @@ static void resigter_function(GtkButton *button, gpointer data){
             transfer_(registertext,2,Userreg,Passreg);
             send(sockfd,registertext,strlen(registertext),0);
             recv(sockfd,buf,2,0);
+            close(sockfd);
             resultregister = atoi(buf);
             if (resultregister == 0)
             {
@@ -320,9 +323,12 @@ void logout_function(){
     gtk_widget_set_sensitive(resigter, TRUE);
     gtk_widget_set_sensitive(logout, FALSE);
     strcat(logout_str,USER);
+    connectSK();
     send(sockfd,logout_str,strlen(logout_str),0);
     bzero(USER,100);
+    close(sockfd);
 }
+int i = 0;
 /*****************************end of log out*******************/
 static void add_function(GtkButton *button, gpointer data){
     char addstring[LENG] = "4%";
@@ -344,9 +350,12 @@ static void add_function(GtkButton *button, gpointer data){
             transfer_(addstring,3,USER,new_word,kind_word);
             strcat(addstring,".");
             strcat(addstring,mean_w);
+            printf("add %d- %s\n",i++,addstring);
+            connectSK();
             bzero(buf, LENG);
-            send(sockfd,addstring,strlen(addstring),0);
+            write(sockfd,addstring,strlen(addstring));
             recv(sockfd,buf,1,0);
+            close(sockfd);
             bzero(addstring, LENG);
             resultadd = atoi(buf);
             if(resultadd == 0){
@@ -406,7 +415,9 @@ static void remove_function(GtkButton *button, gpointer data){
         char *reason_rm = NULL;
         reason_rm = gtk_text_buffer_get_text(text_buffer, &startIter, &endIter, TRUE);
         strcat(del,reason_rm);
-        transfer_(removestring,2,rm_word,del);
+        transfer_(removestring,3,USER,rm_word,del);
+        printf("%s",removestring);
+        connectSK();
         send(sockfd,removestring,strlen(removestring),0);
         recv(sockfd,buf,2,0);
         resultremove = atoi(buf);
@@ -527,8 +538,8 @@ static void makegtk(){
     gtk_text_view_set_editable(GTK_TEXT_VIEW(textview),FALSE);
     gtk_text_view_set_right_margin(GTK_TEXT_VIEW(textview),20);
     // has a function interfere here to put something to it
-    scrolled_window = gtk_scrolled_window_new(NULL, NULL);              
-    gtk_container_add(GTK_CONTAINER(scrolled_window), textview);       
+    scrolled_window = gtk_scrolled_window_new(NULL, NULL);
+    gtk_container_add(GTK_CONTAINER(scrolled_window), textview);
     gtk_grid_attach(GTK_GRID(grid),scrolled_window,1,9,9,9);
     /***********************end 4th-7th line for textview**********************/
     button = gtk_button_new_with_label("Translate");
